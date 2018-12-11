@@ -26,6 +26,8 @@ Mat _difuminadoAleatorio(Mat, int);
 int * _calcularHistograma(Mat);
 Mat _combinacionImagenes();
 Mat _setFondoBlanco(Mat);
+Mat _transformacionBilineal(Mat, Point, Point, Point, Point);
+
 
 Mat opencv_fft(Mat src)
 {
@@ -698,4 +700,175 @@ Mat _difuminadoAleatorio(Mat src, int a)
 	}
 
 	return result;
+}
+
+Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
+{
+	int src_x = src.rows;
+	int src_y = src.cols;
+
+	Point xi1, xi2, xi3, xi4;
+	xi1.x = 0; xi1.y = 0;
+	xi2.x = src_x-1; xi2.y = 0;
+	xi3.x = src_x-1; xi3.y = src_y-1;
+	xi4.x = 0; xi4.y = src_y-1;
+
+	double cx[4][5] = {{xi1.x, xi1.y,  xi1.x*xi1.y, 1, xo1.x}, {xi2.x, xi2.y, xi2.x*xi2.y, 1, xo2.x}, {xi3.x, xi3.y, xi3.x*xi3.y, 1, xo3.x}, {xi4.x, xi4.y, xi4.x*xi4.y, 1, xo4.x}};
+	double cy[4][5] = {{xi1.x, xi1.y,  xi1.x*xi1.y, 1, xo1.y}, {xi2.x, xi2.y, xi2.x*xi2.y, 1, xo2.y}, {xi3.x, xi3.y, xi3.x*xi3.y, 1, xo3.y}, {xi4.x, xi4.y, xi4.x*xi4.y, 1, xo4.y}};
+
+	/*for(int i=0; i<4; i++)
+	{
+		for(int j=0; j<5; j++)
+		{
+			cout << cx[i][j] << " ";
+		}
+		cout << endl;
+	}*/
+
+	for(int i=0; i<4; i++)
+	{
+		if(cx[i][i] == 0)
+		{
+			for(int k=i+1; k<4; k++)
+			{
+				if(cx[k][i] != 0)
+				{
+					for(int p=0; p<5; p++)
+					{
+						double temp = cx[i][p];
+						cx[i][p] = cx[k][p];
+						cx[k][p] = temp;							
+					}
+					break;
+				}
+			}
+		}
+
+		/*cout << "-----" << endl;
+
+		for(int i=0; i<4; i++)
+		{
+			for(int j=0; j<5; j++)
+			{
+				cout << cx[i][j] << " ";
+			}
+			cout << endl;
+		}
+		cout << "-----" << endl;*/
+
+		for(int n=i+1; n<4; n++)
+		{
+			double _temp = cx[n][i];
+			for(int m=0; m<5; m++)
+			{
+				cx[n][m] = cx[n][m] - cx[i][m]*_temp/cx[i][i];
+			}
+		}
+
+		for(int n=i-1; n>=0; n--)
+		{
+			double _temp = cx[n][i];
+			for(int m=0; m<5; m++)
+			{
+				cx[n][m] = cx[n][m] - cx[i][m]*_temp/cx[i][i];
+			}
+		}
+	}
+
+	for(int i=0; i<4; i++)
+	{
+		cx[i][4] = cx[i][4]/cx[i][i];
+		cx[i][i] = cx[i][i]/cx[i][i];
+	}
+
+	/*for(int i=0; i<4; i++)
+	{
+		for(int j=0; j<5; j++)
+		{
+			cout << cx[i][j] << " ";
+		}
+		cout << endl;
+	}*/
+
+	//calcular cy
+
+	for(int i=0; i<4; i++)
+	{
+		if(cy[i][i] == 0)
+		{
+			for(int k=i+1; k<4; k++)
+			{
+				if(cy[k][i] != 0)
+				{
+					for(int p=0; p<5; p++)
+					{
+						double temp = cy[i][p];
+						cy[i][p] = cy[k][p];
+						cy[k][p] = temp;							
+					}
+					break;
+				}
+			}
+		}
+
+		for(int n=i+1; n<4; n++)
+		{
+			double _temp = cy[n][i];
+			for(int m=0; m<5; m++)
+			{
+				cy[n][m] = cy[n][m] - cy[i][m]*_temp/cy[i][i];
+			}
+		}
+
+		for(int n=i-1; n>=0; n--)
+		{
+			double _temp = cy[n][i];
+			for(int m=0; m<5; m++)
+			{
+				cy[n][m] = cy[n][m] - cy[i][m]*_temp/cy[i][i];
+			}
+		}
+	}
+
+	for(int i=0; i<4; i++)
+	{
+		cy[i][4] = cy[i][4]/cy[i][i];
+		cy[i][i] = cy[i][i]/cy[i][i];
+	}
+
+	for(int i=0; i<4; i++)
+	{
+		for(int j=0; j<5; j++)
+		{
+			cout << cy[i][j] << " ";
+		}
+		cout << endl;
+	}
+
+	Mat src_gray;
+	cvtColor(src, src_gray, CV_BGR2GRAY);
+	Mat src_result = src_gray.clone();
+
+	for(int i=0; i<src_gray.rows; i++)
+	{
+		for(int j=0; j<src_gray.cols; j++)
+		{
+			src_result.at<uchar>(i,j) = 255;
+		}
+
+	}
+
+	for(int i=0; i<src_gray.rows; i++)
+	{
+		for(int j=0; j<src_gray.cols; j++)
+		{
+			int x = i*cx[0][4]+j*cx[1][4]+i*j*cx[2][4]+cx[3][4];
+			int y = i*cy[0][4]+j*cy[1][4]+i*j*cy[2][4]+cy[3][4];
+
+			src_result.at<uchar>(x,y) = src_gray.at<uchar>(i,j); 
+		}
+	}
+
+	return src_result;
+
 }

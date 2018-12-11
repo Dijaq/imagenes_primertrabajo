@@ -14,6 +14,14 @@ THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 app 		= Flask(__name__)
 app.debug 	= False
 
+@app.after_request
+def add_header(r):
+	r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+	r.headers["Pragma"] = "no-cache"
+	r.headers["Expires"] = "0"
+	r.headers['Cache-Constrol'] = 'public, max-age=0'
+	return r
+
 @app.route('/combinacion', methods=['GET']) 
 def combinacion():
 	
@@ -59,11 +67,20 @@ def difuminadoAleatorio():
 
 	return render_template('index.html', inputImage = inputImage, outputImage=outputImage)
 
+@app.route('/transformacionBilineal', methods=['GET']) 
+def transformacionBilineal():
+	
+	inputImage = "kuriboh.jpg";
+	pylibfromCFFI.transformacionBilineal(inputImage.encode('ISO-8859-1'))
+	outputImage = "imagen.jpg";
+
+	return render_template('index.html', inputImage = inputImage, outputImage=outputImage)
+
 @app.route('/fft', methods=['GET']) 
 def fft():
 	
-	pylibfromCFFI.combinacionImagenes()
 	inputImage = "kuriboh.jpg";
+	pylibfromCFFI.fft(inputImage.encode('ISO-8859-1'))
 	outputImage = "imagen.jpg";
 
 	return render_template('index.html', inputImage = inputImage, outputImage=outputImage)
@@ -75,4 +92,5 @@ def home():
 	return render_template('index.html', inputImage = inputImage, outputImage=outputImage)
 
 if __name__ == '__main__':
+	app.config["CACHE_TYPE"] = "null"
 	app.run(host='0.0.0.0', port=5000, debug=False)

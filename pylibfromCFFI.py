@@ -6,6 +6,8 @@ ffi.cdef("void cffi_ecualizacion(char *);")
 ffi.cdef("void cffi_sobel(char *);")
 ffi.cdef("void cffi_medianblur(char *);")
 ffi.cdef("void cffi_difuminadoAleatorio(char *);")
+ffi.cdef("void cffi_transformacionBilineal(char *);")
+ffi.cdef("void cffi_fft(char *);")
 C = ffi.dlopen("./milibreria.so")
 
 def combinacionImagenes():
@@ -22,5 +24,12 @@ def medianblur(nameImage):
 
 def difuminadoAleatorio(nameImage):
 	return C.cffi_difuminadoAleatorio(nameImage)
+
+def transformacionBilineal(nameImage):
+	return C.cffi_transformacionBilineal(nameImage)
+
+def fft(nameImage):
+	return C.cffi_fft(nameImage)
+
 
 
