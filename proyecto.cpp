@@ -91,8 +91,8 @@ int main(int argc, char **argv)
 	//result = _ecualizacionHistograma_gray(src);
 	//result = opencv_histogram_gray(result, 1);
 	//result = opencv_fft(src);
-	//TemplateMatching();
-	result = _medianBlur(src,7);
+	TemplateMatching();
+	//result = _medianBlur(src,7);
 	//imwrite("res.bmp", result);
 	/**Histograma
 	result = _ecualizacionHistograma_gray(src);
@@ -1010,6 +1010,8 @@ void TemplateMatching()
 	createTrackbar(trackbar_label, image_window, &match_method, max_Trackbar, MatchingMethod);
 
 	MatchingMethod(0, 0);
+
+	waitKey(0);
 }
 
 void MatchingMethod(int, void*)
@@ -1033,21 +1035,24 @@ void MatchingMethod(int, void*)
 
 	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 
-	if(match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
+	//cout << "--" << match_method << endl;
+
+	if(match_method == TM_SQDIFF || match_method == TM_SQDIFF_NORMED)
 	{
 		matchLoc = minLoc;
 	}
 	else
 	{
+		//matchLoc = maxLoc;
 		matchLoc = maxLoc;
 	}
+
+	//matchLoc = maxLoc;
 
 	rectangle(img_display, matchLoc, Point(matchLoc.x+templ.cols, matchLoc.y+templ.rows), Scalar::all(0), 2, 8, 0);
 	rectangle(result, matchLoc, Point(matchLoc.x+templ.cols, matchLoc.y+templ.rows), Scalar::all(0), 2, 8, 0);
 
 	imshow(image_window, img_display);
 	imshow(result_window, result);
-
-	waitKey(0);
 
 }
