@@ -6,6 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
 using namespace std;
 using namespace cv;
@@ -35,9 +36,12 @@ char* result_window = "Result window";
 Mat img, templ;
 int match_method;
 int max_Trackbar = 5;
+int thread_count;
 
 int main(int argc, char **argv)
 {
+	thread_count = strtol(argv[2], NULL, 10);
+
 	Mat src, src_gray, dst;
 	Mat result;
 	string window_name = "Sobel Demo";
@@ -87,7 +91,8 @@ int main(int argc, char **argv)
 	//result = _ecualizacionHistograma_gray(src);
 	//result = opencv_histogram_gray(result, 1);
 	//result = opencv_fft(src);
-	TemplateMatching();
+	//TemplateMatching();
+	result = _medianBlur(src,7);
 	//imwrite("res.bmp", result);
 	/**Histograma
 	result = _ecualizacionHistograma_gray(src);
@@ -96,7 +101,8 @@ int main(int argc, char **argv)
 
 	//result = _combinacionImagenes();
 
-	Point point1;
+	
+	/*Point point1;
 	point1.x = 50;
 	point1.y = 0;
 	Point point2;
@@ -107,8 +113,9 @@ int main(int argc, char **argv)
 	point3.y = 200;
 	Point point4;
 	point4.x = 20;
-	point4.y = 190;
+	point4.y = 190;*/
 	
+
 	//result = _transformacionBilineal(src, point1,point2, point3, point4);
 	//result = _difuminadoAleatorio(src, 50);
 	//result = _setFondoBlanco(src);
@@ -200,6 +207,7 @@ Mat opencv_histogram(Mat src)
 	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=1; i<histSize; i++)
 	{
 		line(histImage, Point(bin_w*(i-1), hist_h-cvRound(b_hist.at<float>(i-1))),
@@ -392,6 +400,7 @@ Mat _ecualizacion(Mat src, Mat r_hist, Mat g_hist, Mat b_hist)
 	int acumulado_g = g_hist.at<int>(0,0);
 	int acumulado_b = b_hist.at<int>(0,0);
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=1; i<255; i++)
 	{
 		f_r[i] = acumulado_r*255/(src.rows*src.cols);
@@ -411,6 +420,7 @@ Mat _ecualizacion(Mat src, Mat r_hist, Mat g_hist, Mat b_hist)
 
 	Mat result = src.clone();
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -499,6 +509,7 @@ Mat _ecualizacion_gray(Mat src, int *hist_gray)
 	
 	int acumulado_g = hist_gray[0];
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=1; i<255; i++)
 	{
 		f_g[i] = acumulado_g*255/(src.rows*src.cols);
@@ -511,6 +522,7 @@ Mat _ecualizacion_gray(Mat src, int *hist_gray)
 
 	Mat result = src.clone();
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -527,11 +539,13 @@ int * _calcularHistograma(Mat src)
 {
 	int *histo = new int[256];
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<256; i++)
 	{
 		histo[i] = 0;
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -561,6 +575,7 @@ Mat _combinacionImagenes()
 
 	img1 = _medianBlur(img1, 3);
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<img2.rows; i++)
 	{
 		for(int j=0; j<img2.cols; j++)
@@ -580,6 +595,8 @@ Mat _combinacionImagenes()
 
 Mat _setFondoBlanco(Mat src)
 {
+
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -610,10 +627,9 @@ Mat _medianBlur(Mat src, int size)
 	Mat kernel = Mat::ones(size, size, CV_8UC1);
 	Mat result = src.clone();
 
-	cout << kernel << endl;	
-
 	int mid_size = size/2;
-	cout << "--->" << mid_size << endl;
+	
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=mid_size; i<src.rows-mid_size; i++)
 	{
 		for(int j=mid_size; j<src.cols-mid_size; j++)
@@ -739,6 +755,7 @@ Mat _sobel(Mat src)
 		}
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=1; i<src.rows-1; i++)
 	{
 		for(int j=1; j<src.cols-1; j++)
@@ -755,6 +772,7 @@ Mat _sobel(Mat src)
 		}
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -777,6 +795,7 @@ Mat _difuminadoAleatorio(Mat src, int a)
 	srand(time(NULL));
 	
 	Mat result = src.clone();
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src.rows; i++)
 	{
 		for(int j=0; j<src.cols; j++)
@@ -790,7 +809,6 @@ Mat _difuminadoAleatorio(Mat src, int a)
 				result.at<Vec3b>(i,j) = result.at<Vec3b>(fx,fy);
 				result.at<Vec3b>(fx,fy) = result.at<Vec3b>(fx,fy);
 			}
-			//result.at<Vec3b>(i,j) = src.at<Vec3b>(150,150);
 		}
 	}
 
@@ -820,6 +838,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 		cout << endl;
 	}*/
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<4; i++)
 	{
 		if(cx[i][i] == 0)
@@ -851,6 +870,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 		}
 		cout << "-----" << endl;*/
 
+#pragma omp parallel for num_threads(thread_count)
 		for(int n=i+1; n<4; n++)
 		{
 			double _temp = cx[n][i];
@@ -860,6 +880,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 			}
 		}
 
+#pragma omp parallel for num_threads(thread_count)
 		for(int n=i-1; n>=0; n--)
 		{
 			double _temp = cx[n][i];
@@ -870,6 +891,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 		}
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<4; i++)
 	{
 		cx[i][4] = cx[i][4]/cx[i][i];
@@ -887,6 +909,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 
 	//calcular cy
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<4; i++)
 	{
 		if(cy[i][i] == 0)
@@ -925,12 +948,14 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 		}
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<4; i++)
 	{
 		cy[i][4] = cy[i][4]/cy[i][i];
 		cy[i][i] = cy[i][i]/cy[i][i];
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<4; i++)
 	{
 		for(int j=0; j<5; j++)
@@ -944,6 +969,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 	cvtColor(src, src_gray, CV_BGR2GRAY);
 	Mat src_result = src_gray.clone();
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src_gray.rows; i++)
 	{
 		for(int j=0; j<src_gray.cols; j++)
@@ -953,6 +979,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 
 	}
 
+#pragma omp parallel for num_threads(thread_count)
 	for(int i=0; i<src_gray.rows; i++)
 	{
 		for(int j=0; j<src_gray.cols; j++)
