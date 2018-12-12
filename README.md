@@ -20,9 +20,9 @@ Se puede apreciar las siguientes funcionalidades:
 Para ver un demo de template matching se puede abrir el terminal y ejecutar la siguiente linea de comando.
 
 Para compilar
-´´´´
+````
 make exec
-´´´´
+````
 
 Para ejecutar
 ````
