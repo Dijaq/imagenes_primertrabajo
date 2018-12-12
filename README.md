@@ -4,7 +4,7 @@
 
 En la aplicación de QTCreator se encuentra en el directorio
 ```
-build-primertrabajo_imagenes-Desktop-debug
+/build-primertrabajo_imagenes-Desktop-debug
 ```
 
 Se puede apreciar las siguientes funcionalidades:
