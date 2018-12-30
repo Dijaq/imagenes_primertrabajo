@@ -150,3 +150,15 @@ void EditorImagenes::on_btn_fft_clicked()
     image = image.scaledToWidth(ui->output_image->width(), Qt::SmoothTransformation);
     ui->output_image->setPixmap(QPixmap::fromImage(image));
 }
+
+void EditorImagenes::on_btn_rgbHSI_clicked()
+{
+    Mat inputImage = imread(name, CV_LOAD_IMAGE_COLOR);
+    cvtColor(inputImage, inputImage, CV_BGR2RGB);
+
+    Mat result = _rgbtoHSI(inputImage);
+
+    QImage image((uchar*)result.data, result.cols, result.rows, result.step, QImage::Format_RGB888);
+    image = image.scaledToWidth(ui->output_image->width(), Qt::SmoothTransformation);
+    ui->output_image->setPixmap(QPixmap::fromImage(image));
+}

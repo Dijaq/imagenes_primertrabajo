@@ -36,6 +36,8 @@ private slots:
 
     void on_btn_fft_clicked();
 
+    void on_btn_rgbHSI_clicked();
+
 private:
     Ui::EditorImagenes *ui;
 };

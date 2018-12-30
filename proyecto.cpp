@@ -28,6 +28,8 @@ int * _calcularHistograma(Mat);
 Mat _combinacionImagenes();
 Mat _setFondoBlanco(Mat);
 Mat _transformacionBilineal(Mat, Point, Point, Point, Point);
+Mat _rgbtoHSI(Mat src);
+Mat _haarWavelet(Mat src);
 void TemplateMatching();
 void MatchingMethod(int, void*);
 void TemplateMatchingVideo();
@@ -42,7 +44,7 @@ int thread_count;
 
 int main(int argc, char **argv)
 {
-	thread_count = strtol(argv[1], NULL, 10);
+	thread_count = strtol(argv[2], NULL, 10);
 
 	Mat src, src_gray, dst;
 	Mat result;
@@ -51,7 +53,9 @@ int main(int argc, char **argv)
 
 	int c;
 
-	//src = imread(argv[1]);
+	cout << argv[1] << endl;
+
+	src = imread(argv[1]);
 
 	//Imprimir tamaño
 	/*for(int i=0; i<src.rows; i++)
@@ -70,10 +74,10 @@ int main(int argc, char **argv)
 	cout << ((Scalar)src.at<Vec3b>(2,2)[1]).val[0] << endl;
 	cout << ((Scalar)src.at<Vec3b>(2,2)[2]).val[0] << endl;*/
 
-	/*if(!src.data)
+	if(!src.data)
 	{
 		return -1;
-	}*/
+	}
 
 	/*Mat C = (Mat_<double>(3,3)<<0,1,2,3,4,5,6,7,8);
 	cout << C.rows << endl;
@@ -94,7 +98,7 @@ int main(int argc, char **argv)
 	//result = opencv_histogram_gray(result, 1);
 	//result = opencv_fft(src);
 	//TemplateMatching();
-	TemplateMatchingVideo();
+	
 	//result = _medianBlur(src,7);
 	//imwrite("res.bmp", result);
 	/**Histograma
@@ -118,6 +122,8 @@ int main(int argc, char **argv)
 	point4.x = 20;
 	point4.y = 190;*/
 	
+	//result = _rgbtoHSI(src);
+	result = _haarWavelet(src);
 
 	//result = _transformacionBilineal(src, point1,point2, point3, point4);
 	//result = _difuminadoAleatorio(src, 50);
@@ -127,7 +133,7 @@ int main(int argc, char **argv)
 
 	//result = opencv_ecualizacion(src);
 
-	//imshow(window_name, result);
+	imshow(window_name, result);
 
 	waitKey(0);
 
@@ -1141,4 +1147,88 @@ void MatchingMethodVideo(int, void*)
 	imshow(image_window, img_display);
 	//imshow(result_window, result);
 
+}
+
+Mat _rgbtoHSI(Mat src)
+{
+	Mat hsi(src.rows, src.cols, src.type());
+	float banda_r, banda_g, banda_b, h, s, in;
+
+	for(int i=0; i<src.rows; i++)
+	{
+		for(int j=0; j<src.cols; j++)
+		{
+			banda_r = src.at<Vec3b>(i,j)[2];
+			banda_g = src.at<Vec3b>(i,j)[1];
+			banda_b = src.at<Vec3b>(i,j)[0];
+
+			in = (banda_b+banda_g+banda_r)/3;
+
+			int min_val=0;
+			min_val = min(banda_r,min(banda_g,banda_b));
+
+			s = 1-3*(min_val/(banda_r+banda_g+banda_b));
+
+			if(s < 0.00001)
+			{
+				s=0;
+			}
+			else
+			{
+				if(s > 0.99999)
+					s=1;
+			}
+
+			if(s != 0)
+			{
+				h = 0.5*((banda_r-banda_g)+(banda_r-banda_b))/sqrt(((banda_r-banda_g)*(banda_r-banda_g))+((banda_r-banda_b)*(banda_g-banda_b)));
+				h = acos(h);
+
+				if(!(banda_b <= banda_g))
+				{
+					h = ((360*3.14159265)/180.0)-h;
+				}
+			}
+
+			hsi.at<Vec3b>(i,j)[0] = (h*180)/3.14159265;
+			hsi.at<Vec3b>(i,j)[1] = s*100;
+			hsi.at<Vec3b>(i,j)[2] = in;
+
+		}
+	}
+
+	return hsi;
+}
+
+Mat _haarWavelet(Mat src)
+{
+	float c, dh, dv, dd;
+	Mat dst;
+
+	assert(src.type() == CV_32FC1);
+	assert(dst.type() == CV_32FC1);
+
+	for(int k=0; k<4; k++)
+	{
+		for(int i=0; i<(src.rows>>(k+1)); i++)
+		{
+			for(int j=0; j<(src.cols>>(k+1)); j++)
+			{
+				c = (src.at<float>(2*i, 2*j)+src.at<float>(2*i, 2*j+1)+src.at<float>(2*i+1, 2*j)+src.at<float>(2*i+1, 2*j+1))*0.5;
+				dst.at<float>(i,j)=c;
+
+				dh = (src.at<float>(2*i, 2*j)+src.at<float>(2*i+1, 2*j)-src.at<float>(2*i, 2*j+1)-src.at<float>(2*i+1, 2*j+1))*0.5;
+				dst.at<float>(i,j+(src.cols>>(k+1)))=dh;
+				
+				dv = (src.at<float>(2*i, 2*j)+src.at<float>(2*i, 2*j+1)-src.at<float>(2*i+1, 2*j)-src.at<float>(2*i+1, 2*j+1))*0.5;
+				dst.at<float>(i+(src.rows>>(k+1)),j)=dv;
+
+				dd = (src.at<float>(2*i, 2*j)-src.at<float>(2*i, 2*j+1)-src.at<float>(2*i+1, 2*j)+src.at<float>(2*i+1, 2*j+1))*0.5;
+				dst.at<float>(i+(src.rows>>(k+1)), j+(src.cols>>(k+1)))=dd;
+			}
+
+		}
+	}
+
+	return dst;
 }

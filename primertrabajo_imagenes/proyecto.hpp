@@ -27,6 +27,7 @@ int * _calcularHistograma(Mat);
 Mat _combinacionImagenes();
 Mat _setFondoBlanco(Mat);
 Mat _transformacionBilineal(Mat, Point, Point, Point, Point);
+Mat _rgbtoHSI(Mat);
 void TemplateMatching();
 void MatchingMethod(int, void*);
 void TemplateMatchingVideo();
