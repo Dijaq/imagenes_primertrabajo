@@ -79,16 +79,21 @@ void EditorImagenes::on_btn_transformacion_bilinela_clicked()
     point1.y = 0;
     Point point2;
     point2.x = 400;
-    point2.y = 20;
+    point2.y = 40;
     Point point3;
-    point3.x = 100;
-    point3.y = 300;
+    point3.x = 200;
+    point3.y = 400;
     Point point4;
     point4.x = 20;
     point4.y = 190;
 
     Mat inputImage = imread(name, CV_LOAD_IMAGE_COLOR);
     cvtColor(inputImage, inputImage, CV_BGR2RGB);
+
+    point2.x = inputImage.rows*3/4;
+    point3.x = inputImage.cols/3;
+    point3.y = inputImage.cols*2/3;
+    point4.y = inputImage.cols/3;
 
     Mat result = _transformacionBilineal(inputImage, point1,point2, point3, point4);
 

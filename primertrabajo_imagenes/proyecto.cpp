@@ -320,25 +320,31 @@ Mat _ecualizacion_gray(Mat src, int *hist_gray)
     int acumulado_g = hist_gray[0];
 
 //#pragma omp parallel for num_threads(thread_count)
-    for(int i=1; i<255; i++)
+//#pragma omp parallel
     {
-        f_g[i] = acumulado_g*255/(src.rows*src.cols);
-        acumulado_g = acumulado_g + hist_gray[i];
-    }
-
-    f_g[255] = 255;
-
-    string window_name = "Filtro sobel implementacion propia";
-
-    Mat result = src.clone();
-
-//#pragma omp parallel for num_threads(thread_count)
-    for(int i=0; i<src.rows; i++)
-    {
-        for(int j=0; j<src.cols; j++)
+#pragma omp parallel for num_threads(thread_count)
+        for(int i=1; i<255; i++)
         {
-            src.at<uchar>(i, j) = f_g[(int)((Scalar)src.at<uchar>(i, j)).val[0]];
+            f_g[i] = acumulado_g*255/(src.rows*src.cols);
+            acumulado_g = acumulado_g + hist_gray[i];
         }
+
+        f_g[255] = 255;
+
+        string window_name = "Filtro sobel implementacion propia";
+
+        Mat result = src.clone();
+
+    //#pragma omp parallel for num_threads(thread_count)
+//#pragma omp for
+        for(int i=0; i<src.rows; i++)
+        {
+            for(int j=0; j<src.cols; j++)
+            {
+                src.at<uchar>(i, j) = f_g[(int)((Scalar)src.at<uchar>(i, j)).val[0]];
+            }
+        }
+
     }
 
     return src;
@@ -433,6 +439,10 @@ Implementación del filtro de _medianBlur para el suavizado de la imagen
 
 Mat _medianBlur(Mat src, int size)
 {
+    double time_serial_inicio, time_serial_fin;
+
+    time_serial_inicio = omp_get_wtime();
+
     string window_name = "Filtro sobel implementacion propia";
     Mat dst = src.clone();
 
@@ -466,14 +476,17 @@ Mat _medianBlur(Mat src, int size)
             result.at<Vec3b>(i,j)[2] = sumaB/(size*size);
 
 
-            if(i == 2 && j==2)
+            /*if(i == 2 && j==2)
             {
                 cout << ((Scalar)result.at<Vec3b>(i,j)[0]).val[0]<<endl;
                 cout << ((Scalar)result.at<Vec3b>(i,j)[1]).val[0] <<endl;
                 cout << ((Scalar)result.at<Vec3b>(i,j)[2]).val[0] <<endl;
-            }
+            }*/
         }
     }
+
+    time_serial_fin = omp_get_wtime();
+    cout << "Tiempo: " << time_serial_fin - time_serial_inicio << endl;
 
     return result;
 }
@@ -485,6 +498,10 @@ Implementación del filtro de _medianBlur para detección de bordes
 **/
 Mat _sobel(Mat src)
 {
+
+    double time_serial_inicio, time_serial_fin;
+    time_serial_inicio = omp_get_wtime();
+
     string window_name = "Filtro sobel implementacion propia";
     Mat src_gray_x, grad;
     Mat dst = src.clone();
@@ -519,11 +536,11 @@ Mat _sobel(Mat src)
                 src_gray_x.at<uchar>(i+1,j-1)*G_x.at<double>(2,0)+
                 src_gray_x.at<uchar>(i+1,j)*G_x.at<double>(2,1)+
                 src_gray_x.at<uchar>(i+1,j+1)*G_x.at<double>(2,2)));
-            if(i == 1 && j==1)
+            /*if(i == 1 && j==1)
             {
                 cout << "*-->"<< ((Scalar)grad_x.at<uchar>(i,j)).val[0] << endl;
 
-            }
+            }*/
         }
     }
 
@@ -553,6 +570,9 @@ Mat _sobel(Mat src)
         }
     }
 
+    time_serial_fin = omp_get_wtime();
+
+    cout << "Time: " << time_serial_fin-time_serial_inicio << endl;
 
     return result;
 }
@@ -591,6 +611,9 @@ Mat _difuminadoAleatorio(Mat src, int a)
 
 Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 {
+    double time_serial_inicio, time_serial_fin;
+    time_serial_inicio = omp_get_wtime();
+
     int src_x = src.rows;
     int src_y = src.cols;
 
@@ -690,7 +713,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
         cy[i][i] = cy[i][i]/cy[i][i];
     }
 
-    for(int i=0; i<4; i++)
+    /*for(int i=0; i<4; i++)
     {
         cout << cx[i][4] << endl;
     }
@@ -707,7 +730,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
             cout << cy[i][j] << " ";
         }
         cout << endl;
-    }
+    }*/
 
     Mat src_gray;
     cvtColor(src, src_gray, CV_BGR2GRAY);
@@ -722,6 +745,7 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
 
     }
 
+//#pragma omp parallel for num_threads(thread_count)
     for(int i=0; i<src_gray.rows; i++)
     {
         for(int j=0; j<src_gray.cols; j++)
@@ -733,15 +757,22 @@ Mat _transformacionBilineal(Mat src, Point xo1,Point xo2, Point xo3, Point xo4)
         }
     }
 
+    time_serial_fin = omp_get_wtime();
+    cout << "Time: " << time_serial_fin - time_serial_inicio << endl;
+
     return src_result;
 
 }
 
 Mat _rgbtoHSI(Mat src)
 {
+    double time_serial_inicio, time_serial_fin;
+    time_serial_inicio = omp_get_wtime();
+
     Mat hsi(src.rows, src.cols, src.type());
     float banda_r, banda_g, banda_b, h, s, in;
 
+//#pragma omp parallel for num_threads(thread_count)
     for(int i=0; i<src.rows; i++)
     {
         for(int j=0; j<src.cols; j++)
@@ -784,6 +815,10 @@ Mat _rgbtoHSI(Mat src)
 
         }
     }
+
+    time_serial_fin = omp_get_wtime();
+
+    cout << "Tiempo: " << time_serial_fin - time_serial_inicio << endl;
 
     return hsi;
 }

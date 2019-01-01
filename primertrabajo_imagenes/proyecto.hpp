@@ -7,6 +7,7 @@
 #include <opencv2/imgproc.hpp>
 #include <time.h>
 #include <math.h>
+#include <omp.h>
 
 using namespace cv;
 
